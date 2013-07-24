@@ -7,6 +7,7 @@
 #include "ptam/PatchFinder.h"
 #include "ptam/TrackerData.h"
 #include <ptam/Params.h>
+#include <ptam/Logger.h>
 
 #include <cvd/utility.h>
 #include <cvd/gl_helpers.h>
@@ -161,9 +162,11 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
   {
     if(mnLostFrames < 3)  // .. but only if we're not lost!
     {
+      START_TIMER("motion_model");
       if(mbUseSBIInit)
         CalcSBIRotation();
       ApplyMotionModel();       //
+      STOP_TIMER("motion_model");
       TrackMap();               //  These three lines do the main tracking work.
       UpdateMotionModel();      //
 
@@ -653,8 +656,10 @@ void Tracker::TrackMap()
   for(int i=0; i<LEVELS; i++)
     avPVS[i].reserve(500);
 
+  START_TIMER("reproject");
   //slynen{ reprojection keyfeatures
 #ifdef KF_REPROJ
+
   //possibly visible Keyframes
   vector<KeyFrame::Ptr> vpPVKeyFrames;
   //for all keyframes
@@ -721,6 +726,7 @@ void Tracker::TrackMap()
   for(unsigned int k=0; k<vpPVKeyFrames.size(); k++)
     for(unsigned int i=0; i<vpPVKeyFrames.at(k)->vpPoints.size(); i++)
       vpPVKeyFrames.at(k)->vpPoints.at(i)->bAlreadyProjected = false;
+
 #else
 
   // For all points in the map..
@@ -752,6 +758,8 @@ void Tracker::TrackMap()
   //slynen{ reprojection
 #endif
   //}
+  STOP_TIMER("reproject");
+
 
   // Next: A large degree of faffing about and deciding which points are going to be measured!
   // First, randomly shuffle the individual levels of the PVS.
@@ -805,6 +813,7 @@ void Tracker::TrackMap()
   // with preference to LEVELS-1.
   if(bTryCoarse && avPVS[LEVELS-1].size() + avPVS[LEVELS-2].size() > gvnCoarseMin )
   {
+    START_TIMER("coarse_search");
     // Now, fill the vNextToSearch struct with an appropriate number of
     // TrackerDatas corresponding to coarse map points! This depends on how many
     // there are in different pyramid levels compared to CoarseMin and CoarseMax.
@@ -840,6 +849,9 @@ void Tracker::TrackMap()
     // Now go and attempt to find these points in the image!
     unsigned int nFound = SearchForPoints(vNextToSearch, nCoarseRange, gvnCoarseSubPixIts);
     vIterationSet = vNextToSearch;  // Copy over into the to-be-optimised list.
+    STOP_TIMER("coarse_search");
+
+    START_TIMER("coarse_optimization");
     if(nFound >= gvnCoarseMin)  // Were enough found to do any meaningful optimisation?
     {
       mbDidCoarse = true;
@@ -866,6 +878,7 @@ void Tracker::TrackMap()
         mse3CamFromWorld = SE3<>::exp(v6Update) * mse3CamFromWorld;
       };
     }
+    STOP_TIMER("coarse_optimization");
   };
 
   // So, at this stage, we may or may not have done a coarse tracking stage.
@@ -874,6 +887,8 @@ void Tracker::TrackMap()
   int nFineRange = 10;  // Pixel search range for the fine stage.
   if(mbDidCoarse)       // Can use a tighter search if the coarse stage was already done.
     nFineRange = 5;
+
+  START_TIMER("fine_search");
 
   // What patches shall we use this time? The high-level ones are quite important,
   // so do all of these, with sub-pixel refinement.
@@ -912,6 +927,9 @@ void Tracker::TrackMap()
 
   // Find fine points in image:
   SearchForPoints(vNextToSearch, nFineRange, 0);
+  STOP_TIMER("fine_search");
+
+  START_TIMER("fine_optimization");
   // And attach them all to the end of the optimisation-set.
   for(unsigned int i=0; i<vNextToSearch.size(); i++)
     vIterationSet.push_back(vNextToSearch[i]);
@@ -960,6 +978,7 @@ void Tracker::TrackMap()
     mse3CamFromWorld = SE3<>::exp(v6Update) * mse3CamFromWorld;
     v6LastUpdate = v6Update;
   };
+  STOP_TIMER("fine_optimization");
 
   if(mbDraw)
   {

@@ -9,6 +9,7 @@
 #include "ptam/MapPoint.h"
 #include "ptam/TrackerData.h"
 //}
+#include <ptam/Logger.h>
 
 using namespace CVD;
 using namespace std;
@@ -29,7 +30,7 @@ void KeyFrame::MakeKeyFrame_Lite(BasicImage<CVD::byte> &im)
 	aLevels[0].im.resize(im.size());
 	copy(im, aLevels[0].im);
 
-	// Then, for each level...
+	START_TIMER("pyramid_creation");
 	for(int i=0; i<LEVELS; i++)
 	{
 		Level &lev = aLevels[i];
@@ -38,7 +39,13 @@ void KeyFrame::MakeKeyFrame_Lite(BasicImage<CVD::byte> &im)
 			lev.im.resize(aLevels[i-1].im.size() / 2);
 			halfSample(aLevels[i-1].im, lev.im);
 		}
+	}
+	STOP_TIMER("pyramid_creation");
 
+	START_TIMER("feature_extraction");
+        for(int i=0; i<LEVELS; i++)
+        {
+          Level &lev = aLevels[i];
 		// .. and detect and store FAST corner points.
 		// I use a different threshold on each level; this is a bit of a hack
 		// whose aim is to balance the different levels' relative feature densities.
@@ -82,17 +89,25 @@ void KeyFrame::MakeKeyFrame_Lite(BasicImage<CVD::byte> &im)
 //		printf("N: %d",lev.vCorners.size());
 		//}
 
-		// Generate row look-up-table for the FAST corner points: this speeds up
-		// finding close-by corner points later on.
-		unsigned int v=0;
-		lev.vCornerRowLUT.clear();
-		for(int y=0; y<lev.im.size().y; y++)
-		{
-			while(v < lev.vCorners.size() && y > lev.vCorners[v].y)
-				v++;
-			lev.vCornerRowLUT.push_back(v);
-		}
-	};
+        }
+        STOP_TIMER("feature_extraction");
+
+        START_TIMER("feature_sorting");
+        for(int i=0; i<LEVELS; i++)
+        {
+          Level &lev = aLevels[i];
+          // Generate row look-up-table for the FAST corner points: this speeds up
+          // finding close-by corner points later on.
+          unsigned int v=0;
+          lev.vCornerRowLUT.clear();
+          for(int y=0; y<lev.im.size().y; y++)
+          {
+                  while(v < lev.vCorners.size() && y > lev.vCorners[v].y)
+                          v++;
+                  lev.vCornerRowLUT.push_back(v);
+          }
+	}
+        STOP_TIMER("feature_sorting");
 }
 
 void KeyFrame::MakeKeyFrame_Rest()

@@ -1,5 +1,5 @@
 gui: True
-ImageSizeX: 640
+ImageSizeX: 752
 ImageSizeY: 480
 ARBuffer_width: 1200
 ARBuffer_height: 900
@@ -27,15 +27,15 @@ parent_frame: world
 TrackingQualityFoundPixels: 50
 UseKFPixelDist: True
 NoLevelZeroMapPoints: True
-FASTMethod: OAST16
+FASTMethod: FAST10
 MaxStereoInitLoops: 4
 AutoInitPixel: 20
 
 # --- bluefox - low distort lens  --- 
-Cam_fx: 0.795574
-Cam_fy: 1.25149
-Cam_cx: 0.50417
-Cam_cy: 0.51687
-Cam_s: 0.482014
+Cam_fx: 0.509326
+Cam_fy: 0.796651
+Cam_cx: 0.459051
+Cam_cy: 0.510056
+Cam_s: 0.93207
 # -----------------------------------
 

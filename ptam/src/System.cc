@@ -11,14 +11,24 @@
 #include "ptam/LevelHelpers.h"
 #include "ptam/MapPoint.h"
 
+//cfo:
+#include <ros/package.h>
+#include <ptam/Logger.h>
+#include <vikit/params_helper.h>
+
 #include <ptam_com/ptam_info.h>
 #include <opencv/cv.h>
 #include <cvd/vision.h>
+
+
 
 using namespace CVD;
 using namespace std;
 using namespace GVars3;
 
+#ifdef TRACE
+vk::PerformanceMonitor* g_permon = NULL;
+#endif
 
 System::System() :
       nh_("vslam"), image_nh_(""), first_frame_(true)
@@ -45,6 +55,27 @@ System::System() :
   image_transport::ImageTransport it(image_nh_);
   sub_image_ = it.subscribe(topic, 1, &System::imageCallback, this, image_transport::TransportHints("raw", ros::TransportHints().tcpNoDelay(true)));
   pub_preview_image_ = it.advertise("vslam/preview", 1);
+
+#ifdef TRACE
+  g_permon = new vk::PerformanceMonitor();
+  g_permon->addTimer("pyramid_creation");
+  g_permon->addTimer("feature_extraction");
+  g_permon->addTimer("feature_sorting");
+  g_permon->addTimer("motion_model");
+  g_permon->addTimer("reproject");
+  g_permon->addTimer("coarse_search");
+  g_permon->addTimer("coarse_optimization");
+  g_permon->addTimer("fine_search");
+  g_permon->addTimer("fine_optimization");
+  g_permon->addTimer("visualization");
+  g_permon->addTimer("tot_tracking");
+  g_permon->addTimer("tot_time");
+  g_permon->addLog("dropout");
+  string trace_name(vk::getParam<string>("trace_name", "ptam"));
+  string trace_dir(vk::getParam<string>("trace_dir", ros::package::getPath("ptam")+"/trace"));
+  int trace_run_id = vk::getParam<int>("run_id", 0);
+  g_permon->init(trace_name, trace_dir, trace_run_id, true);
+#endif
 }
 
 
@@ -73,6 +104,8 @@ void System::init(const CVD::ImageRef & size)
     GUI.ParseLine("DrawMap=0");
     GUI.ParseLine("Menu.AddMenuToggle Root \"View Map\" DrawMap Root");
   }
+
+
 }
 
 
@@ -90,7 +123,10 @@ void System::Run()
 void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
 {
   //	static ros::Time t = img->header.stamp;
-
+#ifdef TRACE
+  g_permon->newMeasurement(true);
+#endif
+  START_TIMER("tot_time");
 
   ROS_ASSERT(img->encoding == sensor_msgs::image_encodings::MONO8 && img->step == img->width);
 
@@ -110,10 +146,14 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
     if (!findClosest(img->header.stamp, imu_msgs_, &imu, 0.01))
     {
       ROS_WARN("no imu match, skipping frame");
+      STOP_TIMER("tot_time");
+      LOG("dropout", 3);
       return;
     }
     if (!transformQuaternion(img->header.frame_id, imu.header, imu.orientation, imu_orientation))
     {
+      STOP_TIMER("tot_time");
+      LOG("dropout", 3);
       return;
     }
   }
@@ -138,12 +178,15 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
     tracker_draw = !bDrawMap;
   }
 
+  START_TIMER("tot_tracking");
   mpTracker->TrackFrame(img_bw_, tracker_draw, imu_orientation);
+  STOP_TIMER("tot_tracking");
 
+  START_TIMER("visualization");
   publishPoseAndInfo(img->header);
-
   publishPreviewImage(img_bw_, img->header);
   std::cout << mpMapMaker->getMessageForUser();
+  STOP_TIMER("visualization");
 
   if(PtamParameters::fixparams().gui){
     string sCaption;
@@ -160,6 +203,8 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
     mGLWindow->swap_buffers();
     mGLWindow->HandlePendingEvents();
   }
+
+
   //	usleep(50000);
   //
   //  ros::Time t1 = img->header.stamp;
@@ -174,6 +219,8 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
   //  c=img->header.seq;
   //  t = img->header.stamp;
 
+  LOG("dropout", mpTracker->getTrackingQuality());
+  STOP_TIMER("tot_time");
 }
 
 

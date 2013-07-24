@@ -17,6 +17,7 @@
   <depend package="visualization_msgs"/>
   <depend package="dynamic_reconfigure"/>
   <depend package="cv_bridge"/>
+  <depend package="vikit" />
   <rosdep name="atlas"/>	
   <rosdep name="glut"/>	
   <rosdep name="opencv2"/>

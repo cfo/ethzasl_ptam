@@ -6,7 +6,8 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+set(ROS_BUILD_TYPE Release)
+SET(CMAKE_VERBOSE_MAKEFILE ON)
 rosbuild_init()
 
 add_definitions(-DCVD_HAVE_TOON)
@@ -104,6 +105,7 @@ add_definitions(-DKF_REPROJ)
 rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
 rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall -march=native)
 IF(CMAKE_BUILD_TYPE MATCHES Release)
+ message('building for Release')
  rosbuild_add_compile_flags(ptam -O3)
  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsee -funsafe-loop-optimizations -ffinite-math-only -fno-signed-zeros -fno-math-errno -funroll-loops")
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
