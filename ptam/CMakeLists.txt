@@ -11,6 +11,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 rosbuild_init()
 
 add_definitions(-DCVD_HAVE_TOON)
+add_definitions(-DTRACE) # cfo: for benchmarking
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

@@ -37,6 +37,9 @@
 #include <TooN/se3.h>
 #include <TooN/so3.h>
 
+#include <iostream>
+#include <fstream>
+
 class ATANCamera;
 struct Map;
 class MapMaker;
@@ -84,6 +87,8 @@ private:
   Tracker *mpTracker; 
   ATANCamera *mpCamera;
 
+  std::ofstream* trace_est_pose_;     // estimated trajectory tracefile
+
 //  bool mbDone;
 
   void init(const CVD::ImageRef & size);
@@ -100,6 +105,7 @@ private:
   bool transformQuaternion(const std::string & target_frame, const std_msgs::Header & header, const geometry_msgs::Quaternion & q_in, TooN::SO3<double> & r_out);
   bool transformPoint(const std::string & target_frame, const std_msgs::Header & header, const geometry_msgs::Point & t_in, TooN::Vector<3> & t_out);
   void quaternionToRotationMatrix(const geometry_msgs::Quaternion & q, TooN::SO3<double> & R);
+  void rotationMatrixToQuaternion(const TooN::SO3<double>& Rotation, TooN::Vector<4, double>& q);
 
   /// finds object in queue with timestamp closest to timestamp. Requires that T has a std_msgs::header field named "header"
   template<class T> bool findClosest(const ros::Time & timestamp, std::queue<T> & queue, T * obj, const double & max_delay = 0.01);

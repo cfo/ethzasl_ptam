@@ -27,15 +27,22 @@ parent_frame: world
 TrackingQualityFoundPixels: 50
 UseKFPixelDist: True
 NoLevelZeroMapPoints: True
-FASTMethod: FAST10
+FASTMethod: OAST16
 MaxStereoInitLoops: 4
 AutoInitPixel: 20
 
-# --- bluefox - low distort lens  --- 
+# rig3
 Cam_fx: 0.509326
 Cam_fy: 0.796651
 Cam_cx: 0.459051
 Cam_cy: 0.510056
 Cam_s: 0.93207
-# -----------------------------------
+
+# asl
+#Cam_fx: 0.509326
+#Cam_fy: 0.609205
+#Cam_cx: 0.463166
+#Cam_cy: 0.507133
+#Cam_s: 0.97548
+
 

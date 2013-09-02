@@ -19,7 +19,7 @@
 #include <ptam_com/ptam_info.h>
 #include <opencv/cv.h>
 #include <cvd/vision.h>
-
+#include <boost/lexical_cast.hpp>
 
 
 using namespace CVD;
@@ -70,11 +70,18 @@ System::System() :
   g_permon->addTimer("visualization");
   g_permon->addTimer("tot_tracking");
   g_permon->addTimer("tot_time");
+  g_permon->addLog("n_pts_l0");
+  g_permon->addLog("n_pts_l1");
+  g_permon->addLog("n_pts_l2");
+  g_permon->addLog("n_pts_l3");
   g_permon->addLog("dropout");
   string trace_name(vk::getParam<string>("trace_name", "ptam"));
   string trace_dir(vk::getParam<string>("trace_dir", ros::package::getPath("ptam")+"/trace"));
-  int trace_run_id = vk::getParam<int>("run_id", 0);
-  g_permon->init(trace_name, trace_dir, trace_run_id, true);
+  g_permon->init(trace_name, trace_dir, 0, true);
+
+  // init tracefile for camera pose
+  string trace_est_name(trace_dir + "/" + trace_name + "_traj_estimate.txt");
+  trace_est_pose_ = new std::ofstream(trace_est_name.c_str());
 #endif
 }
 
@@ -159,7 +166,7 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
   }
 
 
-//  -------------------
+  //  -------------------
   // TODO: avoid copy, by calling TrackFrame, with the ros image, because there is another copy inside TrackFrame
   CVD::BasicImage<CVD::byte> img_tmp((CVD::byte *)&img->data[0], CVD::ImageRef(img->width, img->height));
   CVD::copy(img_tmp, img_bw_);
@@ -187,6 +194,24 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
   publishPreviewImage(img_bw_, img->header);
   std::cout << mpMapMaker->getMessageForUser();
   STOP_TIMER("visualization");
+
+#ifdef TRACE
+  // trace the pose estimate
+  if (mpTracker->getTrackingQuality() && mpMap->IsGood())
+  {
+    TooN::SE3<double> T_w_c = mpTracker->GetCurrentPose().inverse();
+    TooN::Vector<4, double> q;
+    rotationMatrixToQuaternion(T_w_c.get_rotation(), q);
+    TooN::Vector<3, double> p = T_w_c.get_translation();
+    trace_est_pose_->precision(15);
+    trace_est_pose_->setf(std::ios::fixed, std::ios::floatfield );
+    (*trace_est_pose_) << img->header.stamp.toSec() << " ";
+    trace_est_pose_->precision(6);
+    (*trace_est_pose_) << p[0] << " " << p[1] << " " << p[2] << " "
+                       << q[0] << " " << q[1] << " " << q[2] << " " << q[2] << endl;
+  }
+#endif
+
 
   if(PtamParameters::fixparams().gui){
     string sCaption;
@@ -662,6 +687,40 @@ void System::quaternionToRotationMatrix(const geometry_msgs::Quaternion & q, Too
 }
 
 
+void System::rotationMatrixToQuaternion(const TooN::SO3<double>& Rotation, TooN::Vector<4, double>& q)
+{
+  // stolen from Eigen3:
+  // This algorithm comes from  "Quaternion Calculus and Fast Animation",
+  // Ken Shoemake, 1987 SIGGRAPH course notes
+  TooN::Matrix<3,3,double> R = Rotation.get_matrix();
+  double t = R(0,0)+R(1,1)+R(2,2);
+  if (t > 0.0)
+  {
+    t = sqrt(t + 1.0);
+    q[3] = 0.5*t;                 // w
+    t = 0.5/t;
+    q[0] = (R(2,1) - R(1,2)) * t; // x
+    q[1] = (R(0,2) - R(2,0)) * t; // y
+    q[2] = (R(1,0) - R(0,1)) * t; // z
+  }
+  else
+  {
+    int i = 0;
+    if (R(1,1) > R(0,0))
+      i = 1;
+    if (R(2,2) > R(i,i))
+      i = 2;
+    int j = (i+1)%3;
+    int k = (j+1)%3;
+
+    t = sqrt(R(i,i) - R(j,j) - R(k,k) + 1.0);
+    q[i] = 0.5 * t;
+    t = 0.5/t;
+    q[3] = (R(k,j)-R(j,k))*t;
+    q[j] = (R(j,i)+R(i,j))*t;
+    q[k] = (R(k,i)+R(i,k))*t;
+  }
+}
 
 void System::GUICommandCallBack(void *ptr, string sCommand, string sParams)
 {

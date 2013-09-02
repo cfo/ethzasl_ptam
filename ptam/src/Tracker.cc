@@ -1008,6 +1008,10 @@ void Tracker::TrackMap()
 
   // Record successful measurements. Use the KeyFrame-Measurement struct for this.
   mCurrentKF->mMeasurements.clear();
+  size_t n_pts[LEVELS];
+  for(size_t i=0; i<LEVELS; ++i)
+    n_pts[i] = 0;
+
   for(vector<TrackerData*>::iterator it = vIterationSet.begin();
       it!= vIterationSet.end();
       it++)
@@ -1020,7 +1024,12 @@ void Tracker::TrackMap()
     m.nLevel = (*it)->nSearchLevel;
     m.bSubPix = (*it)->bDidSubPix;
     mCurrentKF->mMeasurements[((*it)->Point)] = m;
+    ++n_pts[m.nLevel];
   }
+  LOG("n_pts_l0", n_pts[0]);
+  LOG("n_pts_l1", n_pts[1]);
+  LOG("n_pts_l2", n_pts[2]);
+  LOG("n_pts_l3", n_pts[3]);
 
   // Finally, find the mean scene depth from tracked features
   {
