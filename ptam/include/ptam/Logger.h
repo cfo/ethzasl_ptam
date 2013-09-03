@@ -11,8 +11,6 @@
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
-#define TRACE
-
 #ifdef TRACE
   extern vk::PerformanceMonitor* g_permon;
   #define LOG(name,value) g_permon->log(std::string((name)),(value))

@@ -208,7 +208,7 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
     (*trace_est_pose_) << img->header.stamp.toSec() << " ";
     trace_est_pose_->precision(6);
     (*trace_est_pose_) << p[0] << " " << p[1] << " " << p[2] << " "
-                       << q[0] << " " << q[1] << " " << q[2] << " " << q[2] << endl;
+                       << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
   }
 #endif
 
