@@ -1,4 +1,4 @@
-gui: True
+gui: False
 ImageSizeX: 752
 ImageSizeY: 480
 ARBuffer_width: 1200
@@ -31,12 +31,15 @@ FASTMethod: OAST16
 MaxStereoInitLoops: 4
 AutoInitPixel: 20
 
+trace_name: ptam_i7_asl2
+run_id: 0 
+
 # rig3
-Cam_fx: 0.509326
-Cam_fy: 0.796651
-Cam_cx: 0.459051
-Cam_cy: 0.510056
-Cam_s: 0.93207
+#Cam_fx: 0.509326
+#Cam_fy: 0.796651
+#Cam_cx: 0.459051
+#Cam_cy: 0.510056
+#Cam_s: 0.93207
 
 # asl
 #Cam_fx: 0.509326
@@ -45,4 +48,16 @@ Cam_s: 0.93207
 #Cam_cy: 0.507133
 #Cam_s: 0.97548
 
+# asl-vicon
+Cam_fx: 0.577854
+Cam_fy: 0.907533
+Cam_cx: 0.525438
+Cam_cy: 0.523261
+Cam_s: 0.910438
 
+# chiara bluefox
+#Cam_fx: 0.516003
+#Cam_fy: 0.805838
+#Cam_cx: 0.459695
+#Cam_cy: 0.52326
+#Cam_s: 0.92737

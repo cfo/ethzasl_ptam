@@ -1,10 +1,8 @@
 <launch>
     <node name="ptam" pkg="ptam" type="ptam" clear_params="true" output="screen">
-	    <remap from="image" to="$(optenv IMAGE camera/image_raw)" />
+	    <remap from="image" to="$(optenv IMAGE mav2/camera/image_raw)" />
         <remap from="pose" to="pose"/>
 	    <rosparam file="$(find ptam)/PtamFixParams.yaml"/>
-	    <param name="trace_name" value="ptam_i7_rig3" type="str" />
-	    <param name="run_id" value="0" />
     </node>
 </launch>
 

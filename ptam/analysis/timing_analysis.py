@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # tracefile
-trace_name='ptam_i7_rig3'
+trace_name='ptam_i7_asl2'
 img_prefix = '../trace/'+trace_name+'/'+trace_name+'_'
 
 data = csv.reader(open('../trace/'+trace_name+'/logs.csv'))
@@ -60,14 +60,14 @@ plt.xlabel('Time [ms]')
 plt.savefig(img_prefix+'timing_boxplot.png', bbox_inches="tight")
 
 # plot total time for frame processing
-avg_time = np.mean(D['t_tot_time'])*1000;
-avg_time_tracking = np.mean(D['t_tot_tracking'])*1000;
+avg_time = np.median(D['t_tot_time'])*1000;
+avg_time_tracking = np.median(D['t_tot_tracking'])*1000;
 
 plt.figure(2)
 plt.plot(np.arange(n_frames), D['t_tot_time']*1000, 'g-', label='total time [ms]')
 plt.plot(np.arange(n_frames), D['t_tot_tracking']*1000, 'r-', label='total time tracking [ms]')
 plt.plot(np.arange(n_frames), np.ones(n_frames)*avg_time, 'g--', label=str('%(time).1fms avg time' % {'time': avg_time}))
-plt.plot(np.arange(n_frames), np.ones(n_frames)*avg_time_tracking, 'r--', label=str('%(time).1fms avg time tracking' % {'time': avg_time_tracking}))
+plt.plot(np.arange(n_frames), np.ones(n_frames)*avg_time_tracking, 'r--', label=str('%(time).1fms median time tracking' % {'time': avg_time_tracking}))
 plt.legend()
 plt.title('Total Frame Processing Time')
 plt.savefig(img_prefix+'img_tot_processing_time.png', bbox_inches="tight")
